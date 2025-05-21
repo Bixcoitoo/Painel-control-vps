@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle VPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            background: #000;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .card {
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+        .neon-border {
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .data-visualization {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            margin: 2rem auto;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .data-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .notes-area {
+            background: rgba(17, 25, 40, 0.95);
+            backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        .btn-neon {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-neon:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+        .menu-item {
+            transition: all 0.3s ease;
+        }
+        .menu-item:hover {
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+        .category-section {
+            display: none;
+        }
+        .category-section.active {
+            display: block;
+        }
+        .welcome-section {
+            text-align: center;
+            padding: 2rem;
+        }
+        .scrolling-text {
+            overflow: hidden;
+            white-space: nowrap;
+            margin: 2rem 0;
+        }
+        .scrolling-text p {
+            display: inline-block;
+            animation: scroll 20s linear infinite;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body class="text-white p-8">
+    <div id="canvas-container"></div>
+    
+    <div class="max-w-7xl mx-auto relative">
+        <h1 class="text-5xl font-bold mb-8 text-center neon-text">Painel de Controle VPS</h1>
+        
+        <!-- Barra de Menu -->
+        <div class="flex justify-center space-x-8 mb-8 text-xl">
+            <button onclick="showCategory('inicio')" class="menu-item active">
+                <i class="fas fa-home mr-2"></i>Início
+            </button>
+            <button onclick="showCategory('servidor')" class="menu-item">
+                <i class="fas fa-server mr-2"></i>Servidor
+            </button>
+            <button onclick="showCategory('monitoramento')" class="menu-item">
+                <i class="fas fa-chart-line mr-2"></i>Monitoramento
+            </button>
+            <button onclick="showCategory('backup')" class="menu-item">
+                <i class="fas fa-database mr-2"></i>Backup
+            </button>
+            <button onclick="showCategory('configuracoes')" class="menu-item">
+                <i class="fas fa-cog mr-2"></i>Configurações
+            </button>
+            <button onclick="showCategory('ajuda')" class="menu-item">
+                <i class="fas fa-question-circle mr-2"></i>Ajuda
+            </button>
+            <button onclick="showCategory('notas')" class="menu-item">
+                <i class="fas fa-sticky-note mr-2"></i>Notas
+            </button>
+        </div>
+
+        <!-- Seção Início -->
+        <div id="inicio" class="category-section active">
+            <div class="welcome-section">
+                <div class="data-visualization">
+                    <canvas id="dataCanvas" class="data-canvas"></canvas>
+                </div>
+                
+                <div class="scrolling-text">
+                    <p>Bem-vindo ao Painel de Controle VPS - Sua interface centralizada para gerenciamento do servidor</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                    <div class="card p-6">
+                        <h3 class="text-2xl font-bold mb-4 neon-text">
+                            <i class="fas fa-rocket mr-2"></i>Objetivo
+                        </h3>
+                        <p class="text-gray-300">
+                            Este painel foi desenvolvido para facilitar o acesso e gerenciamento do seu servidor VPS,
+                            centralizando todas as ferramentas necessárias em uma interface amigável e intuitiva.
+                        </p>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <h3 class="text-2xl font-bold mb-4 neon-text">
+                            <i class="fas fa-tools mr-2"></i>Recursos
+                        </h3>
+                        <ul class="text-gray-300 list-disc list-inside">
+                            <li>Monitoramento em tempo real</li>
+                            <li>Gerenciamento de containers</li>
+                            <li>Backup automatizado</li>
+                            <li>Administração remota</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção Ajuda -->
+        <div id="ajuda" class="category-section">
+            <div class="grid grid-cols-1 gap-6 mb-8">
+                <!-- Visão Geral -->
+                <div class="card p-6">
+                    <h2 class="text-2xl font-bold mb-4 neon-text">
+                        <i class="fas fa-book mr-2"></i>Documentação do Servidor
+                    </h2>
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold mb-2 text-cyan-400">Visão Geral</h3>
+                        <p class="text-gray-300">
+                            Este documento descreve a instalação, configuração, funcionalidades e resolução de problemas 
+                            das ferramentas escolhidas para gerenciar um servidor Linux local: NGINX, Cockpit, Webmin e Portainer.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Ferramentas -->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4 text-cyan-400">
+                        <i class="fas fa-tools mr-2"></i>Ferramentas Utilizadas
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="border-l-2 border-cyan-500 pl-4">
+                            <h4 class="font-bold text-lg">NGINX</h4>
+                            <p class="text-gray-300">Servidor web e proxy reverso para exposição e roteamento de serviços.</p>
+                        </div>
+                        <div class="border-l-2 border-cyan-500 pl-4">
+                            <h4 class="font-bold text-lg">Cockpit</h4>
+                            <p class="text-gray-300">Painel de controle web para gerenciamento do sistema, com acesso a terminal, logs e recursos.</p>
+                        </div>
+                        <div class="border-l-2 border-cyan-500 pl-4">
+                            <h4 class="font-bold text-lg">Webmin</h4>
+                            <p class="text-gray-300">Painel web completo para administração de sistemas Linux. Acesso: https://&lt;IP&gt;:10000</p>
+                        </div>
+                        <div class="border-l-2 border-cyan-500 pl-4">
+                            <h4 class="font-bold text-lg">Portainer</h4>
+                            <p class="text-gray-300">Painel para gerenciamento de containers Docker de forma visual.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instalação -->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4 text-cyan-400">
+                        <i class="fas fa-download mr-2"></i>Instalação de Ferramentas
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">NGINX</h4>
+                            <pre class="text-sm text-gray-300"><code>sudo apt update
+sudo apt install nginx -y</code></pre>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">Cockpit</h4>
+                            <pre class="text-sm text-gray-300"><code>sudo apt install cockpit -y
+sudo systemctl enable --now cockpit.socket</code></pre>
+                            <p class="text-sm text-gray-400 mt-2">Acesse via https://&lt;IP&gt;:9090</p>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">Webmin</h4>
+                            <pre class="text-sm text-gray-300"><code>wget https://www.webmin.com/download/deb/webmin_2.105_all.deb
+sudo apt install ./webmin_2.105_all.deb -y</code></pre>
+                            <p class="text-sm text-gray-400 mt-2">Acesse via https://&lt;IP&gt;:10000</p>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">Portainer</h4>
+                            <pre class="text-sm text-gray-300"><code>sudo docker volume create portainer_data
+sudo docker run -d \
+  -p 9000:9000 \
+  -p 8000:8000 \
+  --name portainer \
+  --restart=always \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v portainer_data:/data \
+  portainer/portainer-ce</code></pre>
+                            <p class="text-sm text-gray-400 mt-2">Acesse via http://&lt;IP&gt;:9000</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roteamento -->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4 text-cyan-400">
+                        <i class="fas fa-network-wired mr-2"></i>Roteamento com NGINX
+                    </h3>
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <pre class="text-sm text-gray-300"><code>server {
+    listen 80;
+    server_name _;
+
+    location /api/ {
+        proxy_pass http://localhost:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location / {
+        return 200 'NGINX OK';
+        add_header Content-Type text/plain;
+    }
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Comandos Úteis -->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4 text-cyan-400">
+                        <i class="fas fa-terminal mr-2"></i>Comandos Úteis
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">UFW (Firewall)</h4>
+                            <pre class="text-sm text-gray-300"><code>sudo ufw status
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 10000/tcp  # Webmin
+sudo ufw allow 9090/tcp   # Cockpit
+sudo ufw allow 9000/tcp   # Portainer</code></pre>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="font-bold mb-2">Docker</h4>
+                            <pre class="text-sm text-gray-300"><code>sudo docker ps            # Ver containers ativos
+sudo docker ps -a         # Todos containers
+sudo docker logs &lt;nome&gt;   # Ver logs
+sudo docker exec -it &lt;nome&gt; bash  # Entrar no container</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Erros Comuns -->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4 text-cyan-400">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Erros Comuns e Soluções
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="border-l-2 border-yellow-500 pl-4">
+                            <h4 class="font-bold">Ferramenta não acessível via navegador</h4>
+                            <p class="text-gray-300">Verifique se o serviço está ativo e se a porta está aberta no firewall.</p>
+                            <pre class="text-sm text-gray-300 mt-2"><code>sudo systemctl status nginx  # ou cockpit.socket, webmin, etc
+sudo ufw allow &lt;porta&gt;/tcp</code></pre>
+                        </div>
+                        <div class="border-l-2 border-yellow-500 pl-4">
+                            <h4 class="font-bold">Erros com containers Docker</h4>
+                            <p class="text-gray-300">Para permissão negada, adicione seu usuário ao grupo Docker:</p>
+                            <pre class="text-sm text-gray-300 mt-2"><code>sudo usermod -aG docker $USER</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção Notas -->
+        <div id="notas" class="category-section">
+            <div class="notes-area rounded-lg p-6 mb-8">
+                <h2 class="text-3xl font-bold mb-4 neon-text">
+                    <i class="fas fa-sticky-note mr-2"></i>Notas e Documentação
+                </h2>
+                <div class="mb-4">
+                    <input type="text" id="noteTitle" placeholder="Título da nota" class="w-full p-2 mb-2 bg-gray-800 text-white rounded border border-cyan-500/30">
+                    <textarea id="noteContent" placeholder="Conteúdo da nota..." class="w-full p-2 h-32 bg-gray-800 text-white rounded border border-cyan-500/30"></textarea>
+                    <button onclick="saveNote()" class="btn-neon text-white px-4 py-2 rounded mt-2">
+                        <i class="fas fa-save mr-2"></i>Salvar Nota
+                    </button>
+                </div>
+                <div id="notesList" class="space-y-4">
+                    <!-- As notas serão inseridas aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção Servidor -->
+        <div id="servidor" class="category-section">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Seção vazia após remoção do Nginx -->
+            </div>
+        </div>
+
+        <!-- Seção Monitoramento -->
+        <div id="monitoramento" class="category-section">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Cockpit -->
+                <div class="card rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 neon-text">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Cockpit
+                    </h2>
+                    <p class="text-gray-300 mb-4">Interface web para gerenciamento do sistema</p>
+                    <a href="https://192.168.0.145:9090" target="_blank" class="btn-neon text-white px-4 py-2 rounded inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>Acessar
+                    </a>
+                </div>
+
+                <!-- Webmin -->
+                <div class="card rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 neon-text">
+                        <i class="fas fa-cogs mr-2"></i>Webmin
+                    </h2>
+                    <p class="text-gray-300 mb-4">Administração do sistema via web</p>
+                    <a href="http://192.168.0.145:10000" target="_blank" class="btn-neon text-white px-4 py-2 rounded inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>Acessar
+                    </a>
+                </div>
+
+                <!-- Portainer -->
+                <div class="card rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 neon-text">
+                        <i class="fab fa-docker mr-2"></i>Portainer
+                    </h2>
+                    <p class="text-gray-300 mb-4">Gerenciamento de containers Docker</p>
+                    <a href="http://192.168.0.145:9000" target="_blank" class="btn-neon text-white px-4 py-2 rounded inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>Acessar
+                    </a>
+                </div>
+
+                <!-- Monitoramento -->
+                <div class="card rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 neon-text">
+                        <i class="fas fa-chart-line mr-2"></i>Monitoramento
+                    </h2>
+                    <p class="text-gray-300 mb-4">Estatísticas do sistema</p>
+                    <a href="http://192.168.0.145:3000" target="_blank" class="btn-neon text-white px-4 py-2 rounded inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>Acessar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção Backup -->
+        <div id="backup" class="category-section">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Backup -->
+                <div class="card rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 neon-text">
+                        <i class="fas fa-database mr-2"></i>Backup
+                    </h2>
+                    <p class="text-gray-300 mb-4">Gerenciamento de backups</p>
+                    <a href="http://192.168.0.145:8081" target="_blank" class="btn-neon text-white px-4 py-2 rounded inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>Acessar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção Configurações -->
+        <div id="configuracoes" class="category-section">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Configurações -->
+                <div class="card rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 neon-text">
+                        <i class="fas fa-cog mr-2"></i>Configurações
+                    </h2>
+                    <p class="text-gray-300 mb-4">Configurações do sistema</p>
+                    <a href="http://192.168.0.145:8082" target="_blank" class="btn-neon text-white px-4 py-2 rounded inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>Acessar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center text-gray-400">
+            <p>Última atualização: <span id="lastUpdate"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Função para mostrar categoria selecionada
+        function showCategory(category) {
+            // Esconde todas as seções
+            document.querySelectorAll('.category-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Mostra a seção selecionada
+            document.getElementById(category).classList.add('active');
+            
+            // Atualiza o menu
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+
+        // Configuração do background 3D
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Criar partículas do background
+        const bgParticlesGeometry = new THREE.BufferGeometry();
+        const bgParticlesCount = 5000;
+        const bgPosArray = new Float32Array(bgParticlesCount * 3);
+
+        for(let i = 0; i < bgParticlesCount * 3; i++) {
+            bgPosArray[i] = (Math.random() - 0.5) * 5;
+        }
+
+        bgParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(bgPosArray, 3));
+        const bgParticlesMaterial = new THREE.PointsMaterial({
+            size: 0.005,
+            color: 0x00ffff
+        });
+
+        const bgParticlesMesh = new THREE.Points(bgParticlesGeometry, bgParticlesMaterial);
+        scene.add(bgParticlesMesh);
+
+        camera.position.z = 2;
+
+        // Animar background
+        const animateBackground = () => {
+            requestAnimationFrame(animateBackground);
+            bgParticlesMesh.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        };
+
+        animateBackground();
+
+        // Redimensionar background
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Configuração da visualização de dados 3D
+        const dataCanvas = document.getElementById('dataCanvas');
+        const dataRenderer = new THREE.WebGLRenderer({ canvas: dataCanvas, alpha: true });
+        const dataScene = new THREE.Scene();
+        const dataCamera = new THREE.PerspectiveCamera(75, dataCanvas.clientWidth / dataCanvas.clientHeight, 0.1, 1000);
+
+        // Criar partículas de dados
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorArray = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 10;
+            colorArray[i] = Math.random();
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.05,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        dataScene.add(particlesMesh);
+
+        // Adicionar linhas de conexão
+        const linesGeometry = new THREE.BufferGeometry();
+        const linesMaterial = new THREE.LineBasicMaterial({ 
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.3
+        });
+
+        const lines = [];
+        for(let i = 0; i < 100; i++) {
+            const lineGeometry = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(6);
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+            const line = new THREE.Line(lineGeometry, linesMaterial);
+            dataScene.add(line);
+            lines.push({ line, positions: linePositions });
+        }
+
+        dataCamera.position.z = 5;
+
+        // Função de animação dos dados
+        function animateData() {
+            requestAnimationFrame(animateData);
+
+            // Rotação das partículas
+            particlesMesh.rotation.x += 0.001;
+            particlesMesh.rotation.y += 0.002;
+
+            // Atualizar posições das linhas
+            lines.forEach(line => {
+                const positions = line.positions;
+                positions[0] = (Math.random() - 0.5) * 10;
+                positions[1] = (Math.random() - 0.5) * 10;
+                positions[2] = (Math.random() - 0.5) * 10;
+                positions[3] = (Math.random() - 0.5) * 10;
+                positions[4] = (Math.random() - 0.5) * 10;
+                positions[5] = (Math.random() - 0.5) * 10;
+                line.line.geometry.attributes.position.needsUpdate = true;
+            });
+
+            dataRenderer.render(dataScene, dataCamera);
+        }
+
+        // Ajustar tamanho do canvas de dados
+        function resizeDataCanvas() {
+            const container = dataCanvas.parentElement;
+            dataCanvas.width = container.clientWidth;
+            dataCanvas.height = container.clientHeight;
+            dataCamera.aspect = dataCanvas.width / dataCanvas.height;
+            dataCamera.updateProjectionMatrix();
+            dataRenderer.setSize(dataCanvas.width, dataCanvas.height);
+        }
+
+        // Inicializar visualização de dados
+        resizeDataCanvas();
+        animateData();
+        window.addEventListener('resize', resizeDataCanvas);
+
+        // Sistema de Notas
+        let notes = [];
+
+        // Carregar notas do servidor
+        async function loadNotes() {
+            try {
+                const response = await fetch('notes.php');
+                notes = await response.json();
+                displayNotes();
+            } catch (error) {
+                console.error('Erro ao carregar notas:', error);
+                showNotification('Erro ao carregar notas', 'error');
+            }
+        }
+
+        async function saveNote() {
+            const title = document.getElementById('noteTitle').value;
+            const content = document.getElementById('noteContent').value;
+            
+            if (title && content) {
+                try {
+                    const response = await fetch('notes.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ title, content })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        notes.push(result.note);
+                        displayNotes();
+                        document.getElementById('noteTitle').value = '';
+                        document.getElementById('noteContent').value = '';
+                        showNotification('Nota salva com sucesso!', 'success');
+                    }
+                } catch (error) {
+                    console.error('Erro ao salvar nota:', error);
+                    showNotification('Erro ao salvar nota', 'error');
+                }
+            } else {
+                showNotification('Preencha todos os campos', 'warning');
+            }
+        }
+
+        async function deleteNote(id) {
+            try {
+                const response = await fetch('notes.php', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    notes = notes.filter(note => note.id !== id);
+                    displayNotes();
+                    showNotification('Nota excluída com sucesso!', 'success');
+                }
+            } catch (error) {
+                console.error('Erro ao deletar nota:', error);
+                showNotification('Erro ao deletar nota', 'error');
+            }
+        }
+
+        function displayNotes() {
+            const notesList = document.getElementById('notesList');
+            notesList.innerHTML = '';
+            
+            notes.forEach(note => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'card p-4';
+                noteElement.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-bold neon-text">${note.title}</h3>
+                        <button onclick="deleteNote(${note.id})" class="text-red-500 hover:text-red-700">×</button>
+                    </div>
+                    <p class="text-gray-300 mt-2">${note.content}</p>
+                    <p class="text-sm text-gray-500 mt-2">Data: ${note.date}</p>
+                `;
+                notesList.appendChild(noteElement);
+            });
+        }
+
+        // Sistema de notificações
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
+                type === 'success' ? 'bg-green-500' :
+                type === 'error' ? 'bg-red-500' :
+                type === 'warning' ? 'bg-yellow-500' :
+                'bg-blue-500'
+            } text-white`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // Inicializar
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleDateString('pt-BR');
+        loadNotes();
+    </script>
+</body>
+</html> 
